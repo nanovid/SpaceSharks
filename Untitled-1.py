@@ -176,7 +176,23 @@ ax1.set_xlabel('Longitude (°)')
 ax1.set_ylabel('Latitude (°)')
 ax1.set_title(f'Map of Eddy Type at Time Index {time_index}')
 ax1.set_aspect('auto', adjustable='box')
-probability_of_shark = np.zeros((num_latitudes_filt, num_longitudes_filt))
 
+probability_of_shark = np.zeros((num_latitudes_filt, num_longitudes_filt))
+norm_eddy = np.zeros((num_latitudes_filt, num_longitudes_filt))
+
+#Normalize eddy_filt to get probability between -1 and 1
+for i in range(num_latitudes_filt):
+    for j in range(num_longitudes_filt):
+        if eddy_filt[i,j] > 0:
+            norm_eddy[i,j] = (eddy_filt[i,j] / np.max(eddy_filt))
+        elif eddy_filt[i,j] < 0:
+            norm_eddy[i,j] = -(eddy_filt[i,j] / np.min(eddy_filt))
+        else:
+            norm_eddy[i,j] = 0
+
+fig3, ax3 = plt.subplots(figsize=(10, 8))
+# Use pcolormesh for grid-based data. Use shading='auto' or 'gouraud'.
+cf = ax3.pcolormesh(lon_filtered, lat_filtered, norm_eddy, cmap='jet', shading='auto')
+fig3.colorbar(cf, ax=ax3, label='Normailized Eddy Type')
 plt.show()
 
