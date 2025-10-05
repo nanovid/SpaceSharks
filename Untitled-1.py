@@ -32,6 +32,7 @@ print(ds) # Printing the dataset gives a helpful overview
 # brackets (e.g., 'sla') MUST match the names in your NetCDF file.
 lon = ds['longitude'].values
 lat = ds['latitude'].values
+
 sla_data_all_times = ds['sla'].values
 #print(sla_data_all_times)
 ugosa_data_all_times = ds['ugosa'].values
@@ -46,9 +47,9 @@ def is_eddy(lat, zeta, alpha=0.2):
     cyclonic_mask = (zeta > alpha * np.abs(f)) ## True where cyclonic
     anticyclonic_mask = (zeta < -alpha * np.abs(f)) ## True where anticyclonic
     if cyclonic_mask:
-        return 1
+        return zeta
     elif anticyclonic_mask:
-        return -1
+        return zeta
     else:
         return 0
 
@@ -70,7 +71,7 @@ ugosa_to_plot = ugosa_data_all_times[:, :, time_index]
 vgosa_to_plot = vgosa_data_all_times[:, :, time_index]
 zeta_to_plot = zeta_data_all_times[:, :, time_index]
 
-#calculations
+""" #calculations 
 num_latitudes, num_longitudes = zeta_to_plot.shape
 eddy = np.zeros((num_latitudes, num_longitudes))
 # Use nested loops to iterate through each index (i, j)
@@ -82,7 +83,6 @@ for i in range(num_latitudes):
         current_zeta = zeta_to_plot[i, j]
         eddy_type = is_eddy(current_lat, current_zeta)
         eddy[i,j] = eddy_type
-
 
 
 # --- 3. Plot 1: Sea Level Anomaly (SLA) Map ---
@@ -101,14 +101,15 @@ ax1.set_aspect('auto', adjustable='box')
 # --- 4. Plot 2: Zeta with Geostrophic Current Vectors ---
 fig2, ax2 = plt.subplots(figsize=(10, 8))
 
-# Plot the SLA as the background
+# Plot the zeta as the background
 cf2 = ax2.pcolormesh(lon, lat, zeta_to_plot, cmap='jet', shading='auto')
 fig2.colorbar(cf2, ax=ax2, label='Zeta (1/s)')
 
 #eddy type
 fig1, ax1 = plt.subplots(figsize=(10, 8))
 # Use pcolormesh for grid-based data. Use shading='auto' or 'gouraud'.
-cf = ax1.pcolormesh(lon, lat, eddy, cmap='jet', shading='auto')
+cf = ax1.pcolormesh(lon, lat, eddy, cmap='jet', shading='auto') """
+###upto hear
 
 """ # Downsample the vector data for a cleaner plot
 skip = 50 # Plot a vector every 50th grid point. Adjust as needed.
@@ -129,4 +130,53 @@ ax2.set_aspect('auto', adjustable='box') """
 plt.tight_layout()
 plt.show()
 
-print(zeta_data_all_times)
+
+
+# --- Filtered Window For Analysis ---
+# Define the latitude and longitude bounds for the region of interest
+left_lat = 28
+right_lat = 58
+left_lon = 280
+right_lon = 355
+
+left_lat_index = np.where(lat >= left_lat)[0][0]
+right_lat_index = np.where(lat <= right_lat)[0][-1]
+left_lon_index = np.where(lon >= left_lon)[0][0]
+right_lon_index = np.where(lon <= right_lon)[0][-1]
+
+lat_filtered = lat[left_lat_index:right_lat_index+1]
+lon_filtered = lon[left_lon_index:right_lon_index+1]
+
+zeta_filtered = zeta_to_plot[left_lat_index:right_lat_index+1, left_lon_index:right_lon_index+1]
+
+fig2, ax2 = plt.subplots(figsize=(10, 8))
+
+# Plot the zeta as the background
+cf2 = ax2.pcolormesh(lon_filtered, lat_filtered, zeta_filtered, cmap='jet', shading='auto')
+fig2.colorbar(cf2, ax=ax2, label='Zeta (1/s)')
+
+#eddy type plot
+num_latitudes_filt, num_longitudes_filt = zeta_filtered.shape
+eddy_filt = np.zeros((num_latitudes_filt, num_longitudes_filt))
+
+# Use nested loops to iterate through each index (i, j)
+for i in range(num_latitudes_filt):
+    for j in range(num_longitudes_filt):
+        # Get the values at the specific grid point (i, j)
+        current_lat = lat[i]
+        current_lon = lon[j]
+        current_zeta = zeta_filtered[i, j]
+        eddy_filt[i,j] = is_eddy(current_lat, current_zeta)
+
+fig1, ax1 = plt.subplots(figsize=(10, 8))
+# Use pcolormesh for grid-based data. Use shading='auto' or 'gouraud'.
+cf = ax1.pcolormesh(lon_filtered, lat_filtered, eddy_filt, cmap='jet', shading='auto')
+fig1.colorbar(cf, ax=ax1, label='Eddy Type')
+ax1.set_xlabel('Longitude (°)')
+ax1.set_ylabel('Latitude (°)')
+ax1.set_title(f'Map of Eddy Type at Time Index {time_index}')
+ax1.set_aspect('auto', adjustable='box')
+probability_of_shark = np.zeros((num_latitudes_filt, num_longitudes_filt))
+
+plt.show()
+
