@@ -57,6 +57,7 @@ def is_eddy(lat, zeta, alpha=0.2):
 # --- 2. Prepare Data for a Single Time Step ---
 # NetCDF data is often a time series. We must select one time step to plot.
 
+
 time_index = 0 # Select the first time step. Change this index to see other times.
 
 print(f"\nPreparing to plot data for time_index = {time_index}")
@@ -70,7 +71,18 @@ vgosa_to_plot = vgosa_data_all_times[:, :, time_index]
 zeta_to_plot = zeta_data_all_times[:, :, time_index]
 
 #calculations
-f = 2 * Omega * np.sin(np.deg2rad(lat))
+num_latitudes, num_longitudes = zeta_to_plot.shape
+eddy = np.zeros((num_latitudes, num_longitudes))
+# Use nested loops to iterate through each index (i, j)
+for i in range(num_latitudes):
+    for j in range(num_longitudes):
+        # Get the values at the specific grid point (i, j)
+        current_lat = lat[i]
+        current_lon = lon[j]
+        current_zeta = zeta_to_plot[i, j]
+        eddy_type = is_eddy(current_lat, current_zeta)
+        eddy[i,j] = eddy_type
+
 
 
 # --- 3. Plot 1: Sea Level Anomaly (SLA) Map ---
@@ -93,6 +105,11 @@ fig2, ax2 = plt.subplots(figsize=(10, 8))
 cf2 = ax2.pcolormesh(lon, lat, zeta_to_plot, cmap='jet', shading='auto')
 fig2.colorbar(cf2, ax=ax2, label='Zeta (1/s)')
 
+#eddy type
+fig1, ax1 = plt.subplots(figsize=(10, 8))
+# Use pcolormesh for grid-based data. Use shading='auto' or 'gouraud'.
+cf = ax1.pcolormesh(lon, lat, eddy, cmap='jet', shading='auto')
+
 """ # Downsample the vector data for a cleaner plot
 skip = 50 # Plot a vector every 50th grid point. Adjust as needed.
 lon_sub = lon[::skip, ::skip]
@@ -112,4 +129,4 @@ ax2.set_aspect('auto', adjustable='box') """
 plt.tight_layout()
 plt.show()
 
-print(zeta_to_plot)
+print(zeta_data_all_times)
